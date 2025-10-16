@@ -19,7 +19,6 @@ $(function(){
         $('.cliente-check').prop('checked', this.checked);
     });
 
-    // Quando uma checkbox for alterada, se todas estiverem marcadas, marca o checkAll, senão desmarca
     $(document).on('change', '.cliente-check', function(){
         $('#checkAll').prop('checked', $('.cliente-check:checked').length === $('.cliente-check').length);
     });
@@ -28,7 +27,6 @@ $(function(){
     $('#exportExcel').on('click', function(){
         let selectedIds = $('.cliente-check:checked').map(function(){ return $(this).val(); }).get();
         let cidade = $('#cidadeFiltro').val();
-        // Se algum cliente estiver selecionado, ignora filtro de cidade
         $.ajax({
             url: '/export_excel',
             method: 'POST',
@@ -44,7 +42,7 @@ $(function(){
         });
     });
 
-    // Busca e renderização dinâmica (inclui filtros e checkboxes)
+    // Render tabela dinâmica (com botão editar)
     function buscarRenderizar() {
         let q = $('#busca').val();
         let cidadeFiltro = $('#cidadeFiltro').val();
@@ -59,27 +57,23 @@ $(function(){
             let ordenacao = $('#dataEntregaFiltro').val() || "prox";
             if (ordenacao !== "nenhum") {
                 resultados.sort(function(a, b) {
-                    // Trata datas vazias: datas vazias vão pro fim
                     if (!a.data_entrega && !b.data_entrega) return 0;
                     if (!a.data_entrega) return 1;
                     if (!b.data_entrega) return -1;
                     let dataA = new Date(a.data_entrega);
                     let dataB = new Date(b.data_entrega);
                     if (ordenacao === "prox") {
-                        return dataA - dataB; // Mais próximo primeiro
+                        return dataA - dataB;
                     } else {
-                        return dataB - dataA; // Mais distante primeiro
+                        return dataB - dataA;
                     }
                 });
             }
 
             let tbody = '';
             resultados.forEach(function(c){
-                // STATUS E PRIORIDADE
                 let statusClass = 'status-' + (c.status || '').replace(' ', '').replace('O', 'o');
                 let prioridadeClass = c.prioridade !== 'Normal' ? 'prioridade-' + c.prioridade : '';
-
-                // ALERTA ÚLTIMA CONVERSA
                 let ultimaClasse = '';
                 if (c.ultima_conversa) {
                     let hoje = new Date();
@@ -104,6 +98,7 @@ $(function(){
                     <td>${c.observacoes || ''}</td>
                     <td class="${prioridadeClass}">${c.prioridade}</td>
                     <td>
+                        <button class="btn btn-sm btn-warning btn-edit" data-id="${c.id}">Editar</button>
                         <form method="POST" action="/delete/${c.id}" style="display:inline">
                             <button class="btn btn-sm btn-danger" onclick="return confirm('Confirmar exclusão?')">Excluir</button>
                         </form>
@@ -111,10 +106,77 @@ $(function(){
                 </tr>`;
             });
             $('#clientes-tbody').html(tbody);
-            $('#checkAll').prop('checked', false); // desmarcar master checkbox
+            $('#checkAll').prop('checked', false);
         });
     }
 
-    // Inicializa renderização na primeira carga
+    // Render na primeira carga
     buscarRenderizar();
+
+    // --- Edição de Cliente ---
+
+    // Abrir modal e preencher
+    $(document).on('click', '.btn-edit', function(){
+        let id = $(this).data('id');
+        $('#edit-feedback').text('');
+        $.get('/get_cliente/' + id, function(c){
+            $('#edit-id').val(c.id);
+            $('#edit-data_entrega').val(c.data_entrega || '');
+            $('#edit-nome').val(c.nome || '');
+            $('#edit-cnpj').val(c.cnpj || '');
+            $('#edit-cidade').val(c.cidade || '');
+            $('#edit-matricula').val(c.matricula || '');
+            $('#edit-status').val(c.status || 'Em obra');
+            $('#edit-ultima_conversa').val(c.ultima_conversa || '');
+            $('#edit-observacoes').val(c.observacoes || '');
+            $('#edit-prioridade').val(c.prioridade || 'Normal');
+            var modal = new bootstrap.Modal(document.getElementById('editClienteModal'));
+            modal.show();
+        });
+    });
+
+    // Submeter edição via AJAX
+    $('#edit-cliente-form').on('submit', function(e){
+        e.preventDefault();
+        $('#edit-feedback').css('color', '#e34c49').text('Salvando...');
+        let id = $('#edit-id').val();
+        let formData = {
+            data_entrega: $('#edit-data_entrega').val(),
+            nome: $('#edit-nome').val(),
+            cnpj: $('#edit-cnpj').val(),
+            cidade: $('#edit-cidade').val(),
+            matricula: $('#edit-matricula').val(),
+            status: $('#edit-status').val(),
+            ultima_conversa: $('#edit-ultima_conversa').val(),
+            observacoes: $('#edit-observacoes').val(),
+            prioridade: $('#edit-prioridade').val()
+        };
+        $.ajax({
+            url: '/edit/' + id,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(resp){
+                if (resp.success) {
+                    $('#edit-feedback').css('color', 'green').text('Alterações salvas!');
+                    setTimeout(function(){
+                        var modalEl = document.getElementById('editClienteModal');
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        modal.hide();
+                        buscarRenderizar();
+                    }, 700);
+                } else {
+                    $('#edit-feedback').css('color', '#e34c49').text(resp.error || 'Erro ao salvar!');
+                }
+            },
+            error: function(){
+                $('#edit-feedback').css('color', '#e34c49').text('Erro ao salvar!');
+            }
+        });
+    });
+
+    // Feedback para formulário de adição
+    $('#add-cliente-form').on('submit', function(){
+        $('#add-feedback').css('color', '#2977f6').text('Adicionando...');
+    });
 });

@@ -141,3 +141,17 @@ input#busca:focus {
             font-weight: bold;
             border-radius: 8px;
         }
+        /* Botão Editar Efeito */
+.btn-warning {
+    background: linear-gradient(90deg,#fbb342 70%,#e34c49 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 2px 12px #fbb34250;
+}
+.btn-warning:hover, .btn-warning:focus {
+    background: linear-gradient(90deg,#e34c49 70%,#fbb342 100%) !important;
+    color: #fff !important;
+    transform: translateY(-2px) scale(1.05);
+}

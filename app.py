@@ -111,5 +111,48 @@ def export_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# ---- Novos endpoints para edição ----
+
+@app.route('/get_cliente/<int:id>')
+def get_cliente(id):
+    c = Cliente.query.get(id)
+    if not c:
+        return jsonify({'error': 'Cliente não encontrado!'}), 404
+    return jsonify({
+        'id': c.id,
+        'data_entrega': c.data_entrega.strftime('%Y-%m-%d') if c.data_entrega else '',
+        'nome': c.nome,
+        'cnpj': c.cnpj,
+        'cidade': c.cidade,
+        'matricula': c.matricula,
+        'status': c.status,
+        'prioridade': c.prioridade,
+        'ultima_conversa': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
+        'observacoes': c.observacoes,
+    })
+
+@app.route('/edit/<int:id>', methods=['POST'])
+def edit_cliente(id):
+    c = Cliente.query.get(id)
+    if not c:
+        return jsonify({'success': False, 'error': 'Cliente não encontrado!'}), 404
+    data = request.get_json()
+    try:
+        c.data_entrega = datetime.strptime(data.get('data_entrega',''), '%Y-%m-%d') if data.get('data_entrega') else None
+        c.nome = data.get('nome')
+        c.cnpj = data.get('cnpj')
+        c.cidade = data.get('cidade')
+        c.matricula = data.get('matricula')
+        c.status = data.get('status')
+        c.prioridade = data.get('prioridade')
+        c.ultima_conversa = datetime.strptime(data.get('ultima_conversa',''), '%Y-%m-%d') if data.get('ultima_conversa') else None
+        c.observacoes = data.get('observacoes')
+        if not c.nome:
+            return jsonify({'success': False, 'error': 'O campo Nome é obrigatório!'})
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == '__main__':
     app.run(debug=True)
