@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+database.db
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# VSCode
+.vscode/
+.settings/
+
+# Outros
+*.log
+*.bak
+.DS_Store
+Thumbs.db
+*.xlsx

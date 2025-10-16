@@ -1,0 +1,143 @@
+body {
+    background: #f7fafd;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    color: #222;
+    min-height: 100vh;
+}
+
+h1 {
+    color: #2977f6;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 32px;
+    text-shadow: 0 2px 8px #e4eaff40;
+}
+
+form, .form-control, .form-select {
+    border-radius: 14px !important;
+    box-shadow: 0 1px 4px #b6caff10;
+    border: 1px solid #e4eaff;
+    background: #fff;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 2px #a3c2fa60;
+    border-color: #b8d2fa;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg,#2977f6 70%,#31c1f3 100%);
+    border: none;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 2px 12px #8ecaf680;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background: linear-gradient(90deg,#31c1f3 70%,#2977f6 100%);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-danger {
+    background: linear-gradient(90deg,#e34c49 70%,#fbb342 100%);
+    border: none;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-danger:hover, .btn-danger:focus {
+    background: linear-gradient(90deg,#fbb342 70%,#e34c49 100%);
+    transform: translateY(-2px) scale(1.05);
+}
+
+.table {
+    border-radius: 18px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 32px #ced9f31a;
+}
+
+.table th, .table td {
+    transition: background 0.2s, color 0.2s;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.75em;
+}
+
+/* Somente cor no STATUS e PRIORIDADE */
+.status-Emobra {
+    background: #ffeaa7 !important;
+    color: #ad8302 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+.status-Entregue {
+    background: #baf3d7 !important;
+    color: #17764b !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+.prioridade-Alta {
+    background: #ffb7b7 !important;
+    color: #ff0000 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+/* Efeito suave ao passar o mouse na linha */
+.table tbody tr:hover {
+    background: #eaf3fd !important;
+    box-shadow: 0 2px 12px #b6caff40;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+/* Input busca moderno */
+input#busca {
+    border: 1.5px solid #b8d2fa;
+    background: #f4f9ff;
+    box-shadow: 0 2px 8px #b6caff14;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-weight: 500;
+}
+
+input#busca:focus {
+    border-color: #2977f6;
+    box-shadow: 0 0 0 2px #2977f622;
+}
+
+/* Scrollbar estilizado */
+::-webkit-scrollbar {
+    width: 8px;
+    background: #e6ecfa;
+    border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: #b8d2fa;
+    border-radius: 8px;
+}
+
+/* Ajuste responsivo */
+@media (max-width: 900px) {
+    .table th, .table td {
+        font-size: 0.95rem;
+        padding: 0.45em;
+    }
+    form .col-md-2, form .col-md-1 {
+        margin-bottom: 0.6em;
+    }
+}
+/*Sistema de aviso por data.*/
+        .ultima-1semana {
+            background: #fff8dc !important; /* amarelo suave */
+            color: #b88800 !important;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+        .ultima-2semanas {
+            background: #f8d7da !important; /* vermelho suave */
+            color: #b40020 !important;
+            font-weight: bold;
+            border-radius: 8px;
+        }

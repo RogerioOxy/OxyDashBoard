@@ -1,0 +1,115 @@
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
+from models import db, Cliente
+from datetime import datetime
+import pandas as pd
+import io
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+@app.route('/')
+def index():
+    clientes = Cliente.query.all()
+    cidades = sorted(list({c.cidade for c in clientes if c.cidade}))
+    agora = datetime.now()
+    return render_template('index.html', clientes=clientes, cidades=cidades, current_time=agora)
+
+@app.route('/add', methods=['POST'])
+def add_cliente():
+    data = request.form
+    novo = Cliente(
+        data_entrega=datetime.strptime(data['data_entrega'], '%Y-%m-%d') if data.get('data_entrega') else None,
+        nome=data['nome'],
+        cnpj=data.get('cnpj'),
+        cidade=data.get('cidade'),
+        matricula=data.get('matricula'),
+        status=data.get('status', 'Em obra'),
+        prioridade=data.get('prioridade', 'Normal'),
+        ultima_conversa=datetime.strptime(data['ultima_conversa'], '%Y-%m-%d') if data.get('ultima_conversa') else None,
+        observacoes=data.get('observacoes')
+    )
+    db.session.add(novo)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+@app.route('/delete/<int:id>', methods=['POST'])
+def delete_cliente(id):
+    cliente = Cliente.query.get(id)
+    db.session.delete(cliente)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+@app.route('/search')
+def search():
+    q = request.args.get('q', '').lower()
+    resultados = []
+    for c in Cliente.query.all():
+        if (q in (c.nome or '').lower() or
+            q in (c.cnpj or '').lower() or
+            q in (c.cidade or '').lower() or
+            q in (c.matricula or '').lower() or
+            q in (c.status or '').lower() or
+            q in (c.prioridade or '').lower() or
+            q in (c.observacoes or '').lower() or
+            (c.data_entrega and q in c.data_entrega.strftime('%Y-%m-%d')) or
+            (c.ultima_conversa and q in c.ultima_conversa.strftime('%Y-%m-%d'))):
+            resultados.append({
+                'id': c.id,
+                'data_entrega': c.data_entrega.strftime('%Y-%m-%d') if c.data_entrega else '',
+                'nome': c.nome,
+                'cnpj': c.cnpj,
+                'cidade': c.cidade,
+                'matricula': c.matricula,
+                'status': c.status,
+                'prioridade': c.prioridade,
+                'ultima_conversa': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
+                'observacoes': c.observacoes,
+            })
+    return jsonify(resultados)
+
+@app.route('/export_excel', methods=['POST'])
+def export_excel():
+    ids = request.json.get('ids', [])
+    cidade = request.json.get('cidade', '')
+
+    query = Cliente.query
+    if ids:
+        query = query.filter(Cliente.id.in_(ids))
+    elif cidade:
+        query = query.filter_by(cidade=cidade)
+    clientes = query.all()
+
+    data = []
+    for c in clientes:
+        data.append({
+            'Data de Entrega': c.data_entrega.strftime('%Y-%m-%d') if c.data_entrega else '',
+            'Nome': c.nome,
+            'CNPJ': c.cnpj,
+            'Cidade': c.cidade,
+            'Matrícula': c.matricula,
+            'Status': c.status,
+            'Último Contato': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
+            'Observações': c.observacoes,
+            'Prioridade': c.prioridade
+        })
+
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name="Clientes")
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="clientes_oxy.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+if __name__ == '__main__':
+    app.run(debug=True)
