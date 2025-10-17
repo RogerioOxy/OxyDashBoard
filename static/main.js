@@ -1,29 +1,9 @@
 $(function(){
-    // Busca dinâmica
-    $('#busca').on('input', function(){
-        buscarRenderizar();
-    });
-
-    // Filtro por cidade
-    $('#cidadeFiltro').on('change', function(){
-        buscarRenderizar();
-    });
-
-    // Filtro/sort por data de entrega
-    $('#dataEntregaFiltro').on('change', function(){
-        buscarRenderizar();
-    });
-
-    // Selecionar/desselecionar todos
-    $(document).on('change', '#checkAll', function(){
-        $('.cliente-check').prop('checked', this.checked);
-    });
-
-    $(document).on('change', '.cliente-check', function(){
-        $('#checkAll').prop('checked', $('.cliente-check:checked').length === $('.cliente-check').length);
-    });
-
-    // Exportar para Excel
+    $('#busca').on('input', function(){ buscarRenderizar(); });
+    $('#cidadeFiltro').on('change', function(){ buscarRenderizar(); });
+    $('#dataEntregaFiltro').on('change', function(){ buscarRenderizar(); });
+    $(document).on('change', '#checkAll', function(){ $('.cliente-check').prop('checked', this.checked); });
+    $(document).on('change', '.cliente-check', function(){ $('#checkAll').prop('checked', $('.cliente-check:checked').length === $('.cliente-check').length); });
     $('#exportExcel').on('click', function(){
         let selectedIds = $('.cliente-check:checked').map(function(){ return $(this).val(); }).get();
         let cidade = $('#cidadeFiltro').val();
@@ -42,18 +22,13 @@ $(function(){
         });
     });
 
-    // Render tabela dinâmica (com botão editar)
     function buscarRenderizar() {
         let q = $('#busca').val();
         let cidadeFiltro = $('#cidadeFiltro').val();
         $.get('/search', {q: q}, function(resultados){
             if (cidadeFiltro) {
-                resultados = resultados.filter(function(c){
-                    return c.cidade === cidadeFiltro;
-                });
+                resultados = resultados.filter(function(c){ return c.cidade === cidadeFiltro; });
             }
-
-            // Ordenação por data de entrega
             let ordenacao = $('#dataEntregaFiltro').val() || "prox";
             if (ordenacao !== "nenhum") {
                 resultados.sort(function(a, b) {
@@ -62,41 +37,37 @@ $(function(){
                     if (!b.data_entrega) return -1;
                     let dataA = new Date(a.data_entrega);
                     let dataB = new Date(b.data_entrega);
-                    if (ordenacao === "prox") {
-                        return dataA - dataB;
-                    } else {
-                        return dataB - dataA;
-                    }
+                    if (ordenacao === "prox") { return dataA - dataB; }
+                    else { return dataB - dataA; }
                 });
             }
 
             let tbody = '';
             resultados.forEach(function(c){
-                let statusClass = 'status-' + (c.status || '').replace(' ', '').replace('O', 'o');
-                let prioridadeClass = c.prioridade !== 'Normal' ? 'prioridade-' + c.prioridade : '';
+                let statusClass = 'status-' + (c.status || '').replace(' ', '');
+                let entregaClass = 'entrega-' + (c.entrega || '').replace(' ', '');
+                let nomeStyle = (String(c.prioridade || '').trim().toLowerCase() === 'alta') ? 'style="color:#d60000;font-weight:bold;"' : '';
                 let ultimaClasse = '';
                 if (c.ultima_conversa) {
                     let hoje = new Date();
                     let ultima = new Date(c.ultima_conversa);
                     let diffDias = Math.floor((hoje - ultima) / (1000 * 60 * 60 * 24));
-                    if (diffDias >= 14) {
-                        ultimaClasse = 'ultima-2semanas';
-                    } else if (diffDias > 7) {
-                        ultimaClasse = 'ultima-1semana';
-                    }
+                    if (diffDias >= 14) { ultimaClasse = 'ultima-2semanas'; }
+                    else if (diffDias > 7) { ultimaClasse = 'ultima-1semana'; }
                 }
 
                 tbody += `<tr>
                     <td><input type="checkbox" class="cliente-check" value="${c.id}"></td>
                     <td>${c.data_entrega || ''}</td>
-                    <td>${c.nome}</td>
+                    <td ${nomeStyle}>${c.nome}</td>
                     <td>${c.cnpj || ''}</td>
                     <td>${c.cidade || ''}</td>
                     <td>${c.matricula || ''}</td>
                     <td class="${statusClass}">${c.status}</td>
+                    <td class="${entregaClass}">${c.entrega}</td>
+                    <td>${c.quantidade || ''}</td>
                     <td class="${ultimaClasse}">${c.ultima_conversa || ''}</td>
                     <td>${c.observacoes || ''}</td>
-                    <td class="${prioridadeClass}">${c.prioridade}</td>
                     <td>
                         <button class="btn btn-sm btn-warning btn-edit" data-id="${c.id}">Editar</button>
                         <form method="POST" action="/delete/${c.id}" style="display:inline">
@@ -109,13 +80,9 @@ $(function(){
             $('#checkAll').prop('checked', false);
         });
     }
-
-    // Render na primeira carga
     buscarRenderizar();
 
-    // --- Edição de Cliente ---
-
-    // Abrir modal e preencher
+    // Modal de edição: preencher dados corretamente (inclusive prioridade)
     $(document).on('click', '.btn-edit', function(){
         let id = $(this).data('id');
         $('#edit-feedback').text('');
@@ -127,15 +94,18 @@ $(function(){
             $('#edit-cidade').val(c.cidade || '');
             $('#edit-matricula').val(c.matricula || '');
             $('#edit-status').val(c.status || 'Em obra');
+            $('#edit-entrega').val(c.entrega || 'A receber');
+            $('#edit-quantidade').val(c.quantidade || '');
             $('#edit-ultima_conversa').val(c.ultima_conversa || '');
             $('#edit-observacoes').val(c.observacoes || '');
-            $('#edit-prioridade').val(c.prioridade || 'Normal');
+            // CORREÇÃO: força sempre Normal/Alta corretamente
+            let prioridade = (c.prioridade || 'Normal').trim().toLowerCase() === 'alta' ? 'Alta' : 'Normal';
+            $('#edit-prioridade').val(prioridade);
             var modal = new bootstrap.Modal(document.getElementById('editClienteModal'));
             modal.show();
         });
     });
 
-    // Submeter edição via AJAX
     $('#edit-cliente-form').on('submit', function(e){
         e.preventDefault();
         $('#edit-feedback').css('color', '#e34c49').text('Salvando...');
@@ -147,9 +117,11 @@ $(function(){
             cidade: $('#edit-cidade').val(),
             matricula: $('#edit-matricula').val(),
             status: $('#edit-status').val(),
+            entrega: $('#edit-entrega').val(),
+            quantidade: $('#edit-quantidade').val(),
+            prioridade: $('#edit-prioridade').val(),
             ultima_conversa: $('#edit-ultima_conversa').val(),
-            observacoes: $('#edit-observacoes').val(),
-            prioridade: $('#edit-prioridade').val()
+            observacoes: $('#edit-observacoes').val()
         };
         $.ajax({
             url: '/edit/' + id,
@@ -175,7 +147,6 @@ $(function(){
         });
     });
 
-    // Feedback para formulário de adição
     $('#add-cliente-form').on('submit', function(){
         $('#add-feedback').css('color', '#2977f6').text('Adicionando...');
     });

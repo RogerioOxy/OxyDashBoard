@@ -9,3 +9,6 @@ pip install -r requirements
 
 py app.py
 
+
+Upgrade de DB ao atualizar site: arrumar código upgrade_db.py, por o db no main folder e executar
+py upgrade_db.py

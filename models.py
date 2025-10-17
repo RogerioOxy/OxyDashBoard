@@ -9,7 +9,9 @@ class Cliente(db.Model):
     cnpj = db.Column(db.String(18), nullable=True)
     cidade = db.Column(db.String(100), nullable=True)
     matricula = db.Column(db.String(50), nullable=True)
-    status = db.Column(db.String(20), nullable=False, default="Em obra")  # "Em obra" ou "Entregue"
+    status = db.Column(db.String(20), nullable=False, default="Em obra")  # "Em obra" ou "Finalizado"
+    entrega = db.Column(db.String(20), nullable=False, default="A receber")  # "A receber" ou "Entregue"
+    quantidade = db.Column(db.Integer, nullable=True)
     prioridade = db.Column(db.String(10), nullable=False, default="Normal")  # "Normal" ou "Alta"
     ultima_conversa = db.Column(db.Date, nullable=True)
     observacoes = db.Column(db.Text, nullable=True)

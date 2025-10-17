@@ -29,6 +29,8 @@ def add_cliente():
         cidade=data.get('cidade'),
         matricula=data.get('matricula'),
         status=data.get('status', 'Em obra'),
+        entrega=data.get('entrega', 'A receber'),
+        quantidade=int(data.get('quantidade')) if data.get('quantidade') else None,
         prioridade=data.get('prioridade', 'Normal'),
         ultima_conversa=datetime.strptime(data['ultima_conversa'], '%Y-%m-%d') if data.get('ultima_conversa') else None,
         observacoes=data.get('observacoes')
@@ -54,7 +56,8 @@ def search():
             q in (c.cidade or '').lower() or
             q in (c.matricula or '').lower() or
             q in (c.status or '').lower() or
-            q in (c.prioridade or '').lower() or
+            q in (c.entrega or '').lower() or
+            q in (str(c.quantidade) if c.quantidade else '') or
             q in (c.observacoes or '').lower() or
             (c.data_entrega and q in c.data_entrega.strftime('%Y-%m-%d')) or
             (c.ultima_conversa and q in c.ultima_conversa.strftime('%Y-%m-%d'))):
@@ -66,9 +69,11 @@ def search():
                 'cidade': c.cidade,
                 'matricula': c.matricula,
                 'status': c.status,
-                'prioridade': c.prioridade,
+                'entrega': c.entrega,
+                'quantidade': c.quantidade,
                 'ultima_conversa': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
                 'observacoes': c.observacoes,
+                'prioridade': c.prioridade,
             })
     return jsonify(resultados)
 
@@ -93,9 +98,10 @@ def export_excel():
             'Cidade': c.cidade,
             'Matrícula': c.matricula,
             'Status': c.status,
+            'Entrega': c.entrega,
+            'Quantidade': c.quantidade,
             'Último Contato': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
             'Observações': c.observacoes,
-            'Prioridade': c.prioridade
         })
 
     df = pd.DataFrame(data)
@@ -111,8 +117,6 @@ def export_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# ---- Novos endpoints para edição ----
-
 @app.route('/get_cliente/<int:id>')
 def get_cliente(id):
     c = Cliente.query.get(id)
@@ -126,9 +130,11 @@ def get_cliente(id):
         'cidade': c.cidade,
         'matricula': c.matricula,
         'status': c.status,
-        'prioridade': c.prioridade,
+        'entrega': c.entrega,
+        'quantidade': c.quantidade,
         'ultima_conversa': c.ultima_conversa.strftime('%Y-%m-%d') if c.ultima_conversa else '',
         'observacoes': c.observacoes,
+        'prioridade': c.prioridade,
     })
 
 @app.route('/edit/<int:id>', methods=['POST'])
@@ -144,7 +150,9 @@ def edit_cliente(id):
         c.cidade = data.get('cidade')
         c.matricula = data.get('matricula')
         c.status = data.get('status')
-        c.prioridade = data.get('prioridade')
+        c.entrega = data.get('entrega')
+        c.quantidade = int(data.get('quantidade')) if data.get('quantidade') else None
+        c.prioridade = data.get('prioridade', 'Normal')
         c.ultima_conversa = datetime.strptime(data.get('ultima_conversa',''), '%Y-%m-%d') if data.get('ultima_conversa') else None
         c.observacoes = data.get('observacoes')
         if not c.nome:

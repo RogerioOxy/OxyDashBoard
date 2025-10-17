@@ -155,3 +155,27 @@ input#busca:focus {
     color: #fff !important;
     transform: translateY(-2px) scale(1.05);
 }
+.status-Emobra {
+    background: #ffeaa7 !important;
+    color: #ad8302 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+.status-Finalizado {
+    background: #d6f7ea !important;
+    color: #116044 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+.entrega-Areceber {
+    background: #fff4d6 !important;
+    color: #c38102 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
+.entrega-Entregue {
+    background: #c9f7cb !important;
+    color: #169d39 !important;
+    font-weight: bold;
+    border-radius: 8px;
+}
