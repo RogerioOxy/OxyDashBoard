@@ -3,6 +3,7 @@ from models import db, Cliente
 from datetime import datetime
 import pandas as pd
 import io
+import unicodedata
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -12,10 +13,25 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+def normalize(s):
+    if not s:
+        return ""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    ).lower().strip()
+
 @app.route('/')
 def index():
     clientes = Cliente.query.all()
-    cidades = sorted(list({c.cidade for c in clientes if c.cidade}))
+    # Agrupa cidades pelo nome normalizado (ignorando acento/capitalização)
+    cidades_map = {}
+    for c in clientes:
+        if c.cidade:
+            norm = normalize(c.cidade)
+            if norm and norm not in cidades_map:
+                cidades_map[norm] = c.cidade  # Usa a primeira versão encontrada
+    cidades = sorted(cidades_map.values())
     agora = datetime.now()
     return render_template('index.html', clientes=clientes, cidades=cidades, current_time=agora)
 

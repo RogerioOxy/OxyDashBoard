@@ -1,9 +1,47 @@
 $(function(){
+    // Função para formatar CNPJ ou CPF automaticamente
+    function formatarDocumento(doc) {
+        if (!doc) return '';
+        let digitos = doc.replace(/\D/g, '');
+        if (digitos.length === 14) {
+            // CNPJ
+            return digitos.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+        }
+        if (digitos.length === 11) {
+            // CPF
+            return digitos.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+        }
+        return doc;
+    }
+
+    // Função para normalizar (remove acentos, lowercase, trim)
+    function normalizeStr(str) {
+        return (str || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    }
+
+    // Input CNPJ/CPF só aceita números, mantém cursor e limita tamanho
+    $(document).on('input', 'input[name="cnpj"]', function() {
+        let oldStart = this.selectionStart;
+        let oldLength = this.value.length;
+        let numbers = this.value.replace(/\D/g, '').slice(0, 14);
+        this.value = numbers;
+        let newLength = numbers.length;
+        this.setSelectionRange(
+            oldStart - (oldLength - newLength), 
+            oldStart - (oldLength - newLength)
+        );
+    });
+
     $('#busca').on('input', function(){ buscarRenderizar(); });
     $('#cidadeFiltro').on('change', function(){ buscarRenderizar(); });
     $('#dataEntregaFiltro').on('change', function(){ buscarRenderizar(); });
     $(document).on('change', '#checkAll', function(){ $('.cliente-check').prop('checked', this.checked); });
     $(document).on('change', '.cliente-check', function(){ $('#checkAll').prop('checked', $('.cliente-check:checked').length === $('.cliente-check').length); });
+
     $('#exportExcel').on('click', function(){
         let selectedIds = $('.cliente-check:checked').map(function(){ return $(this).val(); }).get();
         let cidade = $('#cidadeFiltro').val();
@@ -26,8 +64,12 @@ $(function(){
         let q = $('#busca').val();
         let cidadeFiltro = $('#cidadeFiltro').val();
         $.get('/search', {q: q}, function(resultados){
+            // *** FILTRO CIDADE INTELIGENTE ***
             if (cidadeFiltro) {
-                resultados = resultados.filter(function(c){ return c.cidade === cidadeFiltro; });
+                let cidNorm = normalizeStr(cidadeFiltro);
+                resultados = resultados.filter(function(c){
+                    return normalizeStr(c.cidade) === cidNorm;
+                });
             }
             let ordenacao = $('#dataEntregaFiltro').val() || "prox";
             if (ordenacao !== "nenhum") {
@@ -60,7 +102,7 @@ $(function(){
                     <td><input type="checkbox" class="cliente-check" value="${c.id}"></td>
                     <td>${c.data_entrega || ''}</td>
                     <td ${nomeStyle}>${c.nome}</td>
-                    <td>${c.cnpj || ''}</td>
+                    <td>${formatarDocumento(c.cnpj) || ''}</td>
                     <td>${c.cidade || ''}</td>
                     <td>${c.matricula || ''}</td>
                     <td class="${statusClass}">${c.status}</td>
@@ -98,7 +140,6 @@ $(function(){
             $('#edit-quantidade').val(c.quantidade || '');
             $('#edit-ultima_conversa').val(c.ultima_conversa || '');
             $('#edit-observacoes').val(c.observacoes || '');
-            // CORREÇÃO: força sempre Normal/Alta corretamente
             let prioridade = (c.prioridade || 'Normal').trim().toLowerCase() === 'alta' ? 'Alta' : 'Normal';
             $('#edit-prioridade').val(prioridade);
             var modal = new bootstrap.Modal(document.getElementById('editClienteModal'));
