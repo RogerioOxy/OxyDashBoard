@@ -64,19 +64,23 @@ def delete_cliente(id):
 
 @app.route('/search')
 def search():
-    q = request.args.get('q', '').lower()
+    q = request.args.get('q', '')
+    q_norm = normalize(q)
     resultados = []
     for c in Cliente.query.all():
-        if (q in (c.nome or '').lower() or
-            q in (c.cnpj or '').lower() or
-            q in (c.cidade or '').lower() or
-            q in (c.matricula or '').lower() or
-            q in (c.status or '').lower() or
-            q in (c.entrega or '').lower() or
-            q in (str(c.quantidade) if c.quantidade else '') or
-            q in (c.observacoes or '').lower() or
-            (c.data_entrega and q in c.data_entrega.strftime('%Y-%m-%d')) or
-            (c.ultima_conversa and q in c.ultima_conversa.strftime('%Y-%m-%d'))):
+        # Usa normalize para comparar sem acento e sem diferenciar maiúsculas/minúsculas
+        if (
+            q_norm in normalize(c.nome) or
+            q_norm in normalize(c.cnpj) or
+            q_norm in normalize(c.cidade) or
+            q_norm in normalize(c.matricula) or
+            q_norm in normalize(c.status) or
+            q_norm in normalize(c.entrega) or
+            q_norm in normalize(str(c.quantidade) if c.quantidade else '') or
+            q_norm in normalize(c.observacoes) or
+            (c.data_entrega and q_norm in normalize(c.data_entrega.strftime('%Y-%m-%d'))) or
+            (c.ultima_conversa and q_norm in normalize(c.ultima_conversa.strftime('%Y-%m-%d')))
+        ):
             resultados.append({
                 'id': c.id,
                 'data_entrega': c.data_entrega.strftime('%Y-%m-%d') if c.data_entrega else '',
